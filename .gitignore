@@ -1,3 +1,4 @@
 .DS_Store
+.ycm_extra_conf.*
 build/
 autom4te.cache/
