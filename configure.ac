@@ -1,6 +1,7 @@
 AC_INIT([Veta], [0.1], [niklas.voss@gmail.com], [veta], [http://nikvoss.com/])
 AC_PREREQ([2.59])
 AM_INIT_AUTOMAKE([1.10 no-define foreign])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 AC_PROG_CXX
 
@@ -18,5 +19,9 @@ AC_ARG_WITH([v8-lib-path],
 AC_SUBST([V8_LIBS])
 
 AC_CONFIG_FILES([Makefile])
+
+AC_LANG([C++])
+AX_CXX_COMPILE_STDCXX_11
+
 AC_OUTPUT
 
