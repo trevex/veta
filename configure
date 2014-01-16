@@ -589,6 +589,8 @@ am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
 HAVE_CXX11
+LIBCPPA_LIBS
+LIBCPPA_CFLAGS
 V8_LIBS
 V8_CFLAGS
 am__fastdepCXX_FALSE
@@ -680,6 +682,8 @@ enable_silent_rules
 enable_dependency_tracking
 with_v8_include_path
 with_v8_lib_path
+with_libcppa_include_path
+with_libcppa_lib_path
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1317,6 +1321,10 @@ Optional Packages:
   --with-v8-include-path  location of the v8 headers, defaults to
                           /usr/include/v8
   --with-v8-lib-path      location of the v8 libraries
+  --with-libcppa-include-path
+                          location of the libcppa headers, defaults to
+                          /usr/local/include/
+  --with-libcppa-lib-path location of the libcppa libraries
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -3114,6 +3122,24 @@ if test "${with_v8_lib_path+set}" = set; then :
   withval=$with_v8_lib_path; V8_LIBS="-L$withval -lv8"
 else
   V8_LIBS='-lv8'
+fi
+
+
+
+
+# Check whether --with-libcppa-include-path was given.
+if test "${with_libcppa_include_path+set}" = set; then :
+  withval=$with_libcppa_include_path; LIBCPPA_CFLAGS="-I$withval"
+fi
+
+
+
+
+# Check whether --with-libcppa-lib-path was given.
+if test "${with_libcppa_lib_path+set}" = set; then :
+  withval=$with_libcppa_lib_path; LIBCPPA_LIBS="-L$withval -lcppa"
+else
+  LIBCPPA_LIBS='-lcppa'
 fi
 
 

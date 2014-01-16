@@ -18,6 +18,18 @@ AC_ARG_WITH([v8-lib-path],
   [V8_LIBS='-lv8'])
 AC_SUBST([V8_LIBS])
 
+AC_ARG_WITH([libcppa-include-path],
+  [AS_HELP_STRING([--with-libcppa-include-path],
+    [location of the libcppa headers, defaults to /usr/local/include/])],
+  [LIBCPPA_CFLAGS="-I$withval"])
+AC_SUBST([LIBCPPA_CFLAGS])
+
+AC_ARG_WITH([libcppa-lib-path],
+  [AS_HELP_STRING([--with-libcppa-lib-path], [location of the libcppa libraries])],
+  [LIBCPPA_LIBS="-L$withval -lcppa"],
+  [LIBCPPA_LIBS='-lcppa'])
+AC_SUBST([LIBCPPA_LIBS])
+
 AC_CONFIG_FILES([Makefile])
 
 AC_LANG([C++])

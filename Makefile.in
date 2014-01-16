@@ -98,7 +98,7 @@ am__dirstamp = $(am__leading_dot)dirstamp
 am_veta_OBJECTS = src/main.$(OBJEXT)
 veta_OBJECTS = $(am_veta_OBJECTS)
 am__DEPENDENCIES_1 =
-veta_DEPENDENCIES = $(am__DEPENDENCIES_1)
+veta_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -199,6 +199,8 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LIBCPPA_CFLAGS = @LIBCPPA_CFLAGS@
+LIBCPPA_LIBS = @LIBCPPA_LIBS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
@@ -263,9 +265,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
-AM_CPPFLAGS = $(V8_CFLAGS)
+AM_CPPFLAGS = $(V8_CFLAGS) $(LIBCPPA_CFLAGS)
 veta_SOURCES = src/main.cc
-veta_LDADD = $(V8_LIBS)
+veta_LDADD = $(V8_LIBS) $(LIBCPPA_LIBS)
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
