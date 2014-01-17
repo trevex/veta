@@ -3,6 +3,10 @@
 #include <streambuf>
 #include <iostream>
 #include <sstream>
+#include <map>
+#include <vector>
+#include <algorithm>
+#include <memory>
 
 #include <v8.h>
 #include <cppa/cppa.hpp>
@@ -27,10 +31,38 @@ void log(const FunctionCallbackInfo<Value> &args) {
     aout << endl;
 }
 
-Handle<Context> create_veta_context(Isolate* isolate) {
+map<string, shared_ptr<Extension>> extension_map;
+
+unique_ptr<ExtensionConfiguration> get_extension_configuration(const string &file) {
+    if (extension_map.find(file) == extension_map.end()) { // TODO: possible memory issue
+        ifstream file_stream(file.c_str());
+        if (!file_stream) {
+            aout << "Error: Unable to open file: " << file << endl;
+            return NULL;
+        }
+        string file_source;    
+        file_stream.seekg(0, std::ios::end);   
+        file_source.reserve(file_stream.tellg());
+        file_stream.seekg(0, std::ios::beg);
+        file_source.assign((std::istreambuf_iterator<char>(file_stream)), std::istreambuf_iterator<char>()); 
+        
+        shared_ptr<Extension> extension(new Extension(file.c_str(), file_source.c_str(), 0, 0, file_source.size()));
+        extension_map[file] = extension;       
+        RegisterExtension(extension.get()); 
+        aout << "Extension registered!" << endl;
+    }
+    // aout << v8::RegisteredExtension::first_extension()->extension->name();
+    const char* extensions[] = { file.c_str() };
+    //vector<char*> extension_vector;
+    //transform(begin(extensions), end(extensions), back_inserter(extension_vector), [](string& s){ s.push_back(0); return &s[0]; });
+    //extension_vector.push_back(nullptr);
+    return unique_ptr<ExtensionConfiguration>(new ExtensionConfiguration(1, extensions));
+}
+
+Handle<Context> create_veta_context(Isolate* isolate, const string &file) {
     Handle<ObjectTemplate> global = ObjectTemplate::New();
     global->Set(String::New("log"), FunctionTemplate::New(log));
-    return Context::New(isolate, NULL, global);
+    return Context::New(isolate, get_extension_configuration(file).get(), global);
 }
 
 void veta_actor(string file) {
@@ -39,28 +71,26 @@ void veta_actor(string file) {
         Locker locker(isolate);
         Isolate::Scope isolate_scope(isolate);        
         HandleScope handle_scope(isolate);
-        Handle<Context> context = create_veta_context(isolate);
+        if (file.substr(file.size() - 3) != ".js") {
+            file += ".js";
+        }
+        Handle<Context> context = create_veta_context(isolate, file);
         {
             Context::Scope context_scope(context);
     
-            if (file.substr(file.size() - 3) != ".js") {
-                file += ".js";
-            }
+            //ifstream file_stream(file.c_str());
+            //if (!file_stream) {
+            //    aout << "Error: Unable to open file: " << file << endl;
+            //    return;
+            //}
+            //string file_source;    
+            //file_stream.seekg(0, std::ios::end);   
+            //file_source.reserve(file_stream.tellg());
+            //file_stream.seekg(0, std::ios::beg);
+            //file_source.assign((std::istreambuf_iterator<char>(file_stream)), std::istreambuf_iterator<char>()); 
 
-            ifstream file_stream(file.c_str());
-            if (!file_stream) {
-                aout << "Error: Unable to open file: " << file << endl;
-                return;
-            }
-            string file_source;    
-            file_stream.seekg(0, std::ios::end);   
-            file_source.reserve(file_stream.tellg());
-            file_stream.seekg(0, std::ios::beg);
-            file_source.assign((std::istreambuf_iterator<char>(file_stream)), std::istreambuf_iterator<char>()); 
-
-            auto source = String::NewFromUtf8(isolate, file_source.c_str());
-            auto script = Script::Compile(source);
-
+            //auto source = String::NewFromUtf8(isolate, file_source.c_str());
+            auto script = Script::Compile(String::NewFromUtf8(isolate, ""));
             Handle<Value> result = script->Run();
 
             if (!result->IsUndefined()) {
