@@ -1,72 +1,69 @@
-#include <v8.h>
 #include <string>
+#include <fstream>
+#include <streambuf>
 #include <iostream>
-#include "cppa/cppa.hpp"
+
+#include <v8.h>
+#include <cppa/cppa.hpp>
+#include <cppa/scheduler.hpp>
 
 using namespace v8;
 using namespace std;
 using namespace cppa;
 
-void mirror() {
-    // wait for messages
-    become (
-        // invoke this lambda expression if we receive a string
-        on_arg_match >> [](const string& what) -> string {
-            // prints "Hello World!" via aout (thread-safe cout wrapper)
-            aout << what << endl;
-            // terminates this actor ('become' otherwise loops forever)
-            self->quit();
-            // reply "!dlroW olleH"
-            return string(what.rbegin(), what.rend());
-        }
-    );
-}
+void veta_actor(string file) {
+    auto isolate = Isolate::New();
+    {
+        Locker locker(isolate);
+        Isolate::Scope isolate_scope(isolate);        
+        HandleScope handle_scope(isolate);
+        //Handle<ObjectTemplate> object_template = Local<ObjectTemplate>::New(isolate, global);
+        Handle<Context> context = Context::New(isolate);
+        {
+            Context::Scope context_scope(context);
+    
+            if (file.substr(file.size() - 3) != ".js") {
+                file += ".js";
+            }
 
-void hello_world(const actor_ptr& buddy) {
-    // send "Hello World!" to our buddy ...
-    sync_send(buddy, "Hello World!").then(
-        // ... and wait for a response
-        on_arg_match >> [](const string& what) {
-            // prints "!dlroW olleH"
-            aout << what << endl;
+            ifstream file_stream(file.c_str());
+            if (!file_stream) {
+                aout << "Error: Unable to open file: " << file << endl;
+                return;
+            }
+            string file_source;    
+            file_stream.seekg(0, std::ios::end);   
+            file_source.reserve(file_stream.tellg());
+            file_stream.seekg(0, std::ios::beg);
+            file_source.assign((std::istreambuf_iterator<char>(file_stream)), std::istreambuf_iterator<char>()); 
+
+            auto source = String::NewFromUtf8(isolate, file_source.c_str());
+            auto script = Script::Compile(source);
+
+            Handle<Value> result = script->Run();
+
+            if (!result.IsEmpty()) {
+                String::Utf8Value utf8(result);
+                aout << *utf8 << endl;
+            }
         }
-    );
+    }
+    isolate->Dispose();
 }
 
 int main(int argc, char* argv[]) {
-    // Get the default Isolate created at startup.
-    Isolate* isolate = Isolate::GetCurrent();
-
-    // Create a stack-allocated handle scope.
-    HandleScope handle_scope(isolate);
-
-    // Create a new context.
-    Handle<Context> context = Context::New(isolate);
-
-    // Enter the context for compiling and running the hello world script.
-    Context::Scope context_scope(context);
-
-    // Create a string containing the JavaScript source code.
-    Handle<String> source = String::NewFromUtf8(isolate, "'Hello' + ', World!'");
+    std::string file_arg = "";
+    if (argc > 1) { 
+        file_arg = argv[1]; 
+    }
+    if (file_arg == "") {
+        return 0;
+    }
     
-    // Compile the source code.
-    Handle<Script> script = Script::Compile(source);
-    
-    // Run the script to get the result.
-    Handle<Value> result = script->Run();
-    
-    // Convert the result to an UTF8 string and print it.
-    String::Utf8Value utf8(result);
-    printf("%s\n", *utf8);
-
-    // create a new actor that calls 'mirror()'
-    auto mirror_actor = spawn(mirror);
-    // create another actor that calls 'hello_world(mirror_actor)'
-    spawn(hello_world, mirror_actor);
-    // wait until all other actors we have spawned are done
+    set_default_scheduler(4);
+    for(int i = 0; i < 100; i++) spawn(veta_actor, file_arg);
     await_all_others_done();
-    // run cleanup code before exiting main
-    shutdown();
+    shutdown(); 
 
     return 0;
 }
