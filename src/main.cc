@@ -16,6 +16,8 @@ using namespace v8;
 using namespace std;
 using namespace cppa;
 
+map<string, Extension*> extension_map;
+
 void log(const FunctionCallbackInfo<Value> &args) {
     bool first = true;
     for (int i = 0; i < args.Length(); i++) {
@@ -30,8 +32,6 @@ void log(const FunctionCallbackInfo<Value> &args) {
     }
     aout << endl;
 }
-
-map<string, Extension*> extension_map;
 
 Handle<Context> create_veta_context(Isolate* isolate, const string &file) {
     Handle<ObjectTemplate> global = ObjectTemplate::New();
@@ -57,19 +57,21 @@ int preload_file(string file) { // , bool base_checked = false) {
             return -1;
             // }           
         }
-        string file_source;
+        string* file_source = new string(); // make sure source isn't deleted.
         file_stream.seekg(0, ios::end);   
-        file_source.reserve(file_stream.tellg());
+        file_source->reserve(file_stream.tellg());
         file_stream.seekg(0, ios::beg);
-        file_source.assign((istreambuf_iterator<char>(file_stream)), istreambuf_iterator<char>());
+        file_source->assign((istreambuf_iterator<char>(file_stream)), istreambuf_iterator<char>());
         // int include_error = check_source_includes(file_source);
         // if (include_error != 0)
         //     return include_error;
-        // NOTE: additional check in map possible because of includes
-        Extension* extension = new Extension(file.c_str(), file_source.c_str(), 0, 0, file_source.size());
-        extension_map[file] = extension;
-        RegisterExtension(extension); 
-        cout << "Extension registered!" << endl;
+        if (extension_map.find(file) == extension_map.end()) {
+            Extension* extension = new Extension(file.c_str(), file_source->c_str(), 0, 0, file_source->size());
+            extension_map[file] = extension; // NOTE: because of reference in map, string will persist
+            RegisterExtension(extension);
+        } else {
+            delete file_source;
+        } 
     }
     return 0;
 }
@@ -83,7 +85,7 @@ void veta_actor(const string &file) {
         Handle<Context> context = create_veta_context(isolate, file);
         {
             Context::Scope context_scope(context); 
-            auto script = Script::Compile(String::NewFromUtf8(isolate, "init();"));
+            auto script = Script::Compile(String::NewFromUtf8(isolate, ""));
             Handle<Value> result = script->Run();
             if (!result->IsUndefined()) {
                 String::Utf8Value utf8(result);
